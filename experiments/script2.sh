@@ -32,7 +32,7 @@ do
             time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --in-prop --out-prop
             # time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps
              #time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --in-prop --out-prop --init-efps
-            time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps-2
+            time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps-1
             for cutmax in "${CUTMAX[@]}"
             do
                 for cutfreq in "${CUTFREQ[@]}"
