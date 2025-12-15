@@ -30,16 +30,15 @@ do
             time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --in-prop
             time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop
             time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --in-prop --out-prop
-            time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps-1
-            # time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps
-             #time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --in-prop --out-prop --init-efps
-            # for cutmax in "${CUTMAX[@]}"
-            # do
-                # for cutfreq in "${CUTFREQ[@]}"
-                # do
-                    #time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps --cuts --cut-max $cutmax --cut-freq $cutfreq
-                # done
-            # done
+            time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps
+            time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --in-prop --out-prop --init-efps
+            for cutmax in "${CUTMAX[@]}"
+            do
+                for cutfreq in "${CUTFREQ[@]}"
+                do
+                    time $BIN -s $solver -w $omega -f $INPUT$name -n $NRUN -t $TIMEOUT -o $OUTPUT --out-prop --init-efps --cuts --cut-max $cutmax --cut-freq $cutfreq
+                done
+            done
         done
     done
 done

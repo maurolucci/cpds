@@ -36,8 +36,8 @@ struct LazyEfpsCB : public GRBCallback {
   size_t &totalCutAdded;
 
   LazyEfpsCB(Pds &input, std::ostream &callbackFile, std::ostream &solutionFile,
-             bool inProp, bool outProp, bool initEFPS1, bool initEFPS2,
-             size_t lazyMax, bool useCuts, size_t cutMax, size_t cutFreq)
+             bool inProp, bool outProp, bool initEFPS, size_t lazyMax,
+             bool useCuts, size_t cutMax, size_t cutFreq)
       : mipmodel(), model(*mipmodel.model), s(mipmodel.s), w(mipmodel.w), y(),
         input(input), graph(input.get_graph()), cbFile(callbackFile),
         solFile(solutionFile), lazyMax(lazyMax), useCuts(useCuts),
@@ -125,32 +125,7 @@ struct LazyEfpsCB : public GRBCallback {
     build_prec2props_map();
 
     // Initial EFPS constraints associated to cycles of length 2
-    // Type 1: both precedences are direct
-    if (initEFPS1 && !initEFPS2) {
-      for (auto v : boost::make_iterator_range(vertices(graph))) {
-        if (!input.isZeroInjection(v))
-          continue;
-        for (auto u :
-             boost::make_iterator_range(boost::adjacent_vertices(v, graph))) {
-          if (!input.isZeroInjection(u))
-            continue;
-          // Avoid symmetries
-          if (u >= v)
-            continue;
-          GRBLinExpr constr6_1;
-          auto &props1 = prec2props[std::make_pair(u, v)];
-          auto &props2 = prec2props[std::make_pair(v, u)];
-          for (auto &p1 : props1)
-            constr6_1 += y.at(p1);
-          for (auto &p2 : props2)
-            constr6_1 += y.at(p2);
-          model.addConstr(constr6_1 <= 1);
-        }
-      }
-    }
-    // Initial EFPS constraints associated to cycles of length 2
-    // Of every type
-    else if (initEFPS2) {
+    if (initEFPS) {
       // Find cyclic precedences of length 2
       for (auto &[prec, props1] : prec2props) {
         auto [u, v] = prec;
@@ -663,10 +638,10 @@ private:
 SolveResult solveLazyEfpss(Pds &input, boost::optional<std::string> logPath,
                            std::ostream &callbackFile, std::ostream &solFile,
                            double timeLimit, bool inProp, bool outProp,
-                           bool initEFPS1, bool initEFPS2, size_t lazyMax,
-                           bool useCuts, size_t cutMax, size_t cutFreq) {
-  LazyEfpsCB lazyEfpss(input, callbackFile, solFile, inProp, outProp, initEFPS1,
-                       initEFPS2, lazyMax, useCuts, cutMax, cutFreq);
+                           bool initEFPS, size_t lazyMax, bool useCuts,
+                           size_t cutMax, size_t cutFreq) {
+  LazyEfpsCB lazyEfpss(input, callbackFile, solFile, inProp, outProp, initEFPS,
+                       lazyMax, useCuts, cutMax, cutFreq);
   return lazyEfpss.solve(logPath, timeLimit);
 }
 

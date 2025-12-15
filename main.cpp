@@ -109,9 +109,7 @@ int main(int argc, const char **argv) {
                      "write outputs to the specified directory");
   desc.add_options()("in-prop", "consider incoming propagation constraints");
   desc.add_options()("out-prop", "consider outgoing propagation constraints");
-  desc.add_options()("init-efps-1", "consider initial EFPS constraints type 1");
-  desc.add_options()("init-efps-2",
-                     "consider initial EFPS constraints type 1-2-3");
+  desc.add_options()("init-efps", "consider initial EFPS constraints");
   desc.add_options()("init-fps-1", "consider initial FPS constraints type 1");
   desc.add_options()("init-fps-2", "consider initial FPS constraints type 2");
   desc.add_options()("init-fps-3", "consider initial FPS constraints type 3");
@@ -153,8 +151,7 @@ int main(int argc, const char **argv) {
   size_t n_channels = vm["n-channels"].as<size_t>();
   bool inProp = vm.count("in-prop");
   bool outProp = vm.count("out-prop");
-  bool initEFPS1 = vm.count("init-efps-1");
-  bool initEFPS2 = vm.count("init-efps-2");
+  bool initEFPS = vm.count("init-efps");
   bool initFPS1 = vm.count("init-fps-1");
   bool initFPS2 = vm.count("init-fps-2");
   bool initFPS3 = vm.count("init-fps-3");
@@ -189,10 +186,8 @@ int main(int argc, const char **argv) {
     solver.append("-inp");
   if (outProp)
     solver.append("-outp");
-  if (initEFPS1)
-    solver.append("-init1");
-  if (initEFPS2)
-    solver.append("-init2");
+  if (initEFPS)
+    solver.append("-init");
   if (initFPS1)
     solver.append("-init1");
   if (initFPS2)
@@ -258,8 +253,8 @@ int main(int argc, const char **argv) {
       try {
         if (solverName == "efpss") {
           result = solveLazyEfpss(input, logPath, output.cbFile, output.solFile,
-                                  timeout, inProp, outProp, initEFPS1,
-                                  initEFPS2, lazyMax, useCuts, cutMax, cutFreq);
+                                  timeout, inProp, outProp, initEFPS, lazyMax,
+                                  useCuts, cutMax, cutFreq);
         } else if (solverName == "fpss") {
           result = solveLazyFpss(input, logPath, output.cbFile, output.solFile,
                                  timeout, inProp, outProp, initFPS1, initFPS2,
