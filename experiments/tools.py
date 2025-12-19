@@ -6,18 +6,10 @@ from math import ceil, isnan
 import numpy as np
 import perfprof as pp
 
-
-def show_solved_instances(data, solver):
-    data2 = data[data.solver == solver]
-    labels = range(0, 6, 1)
-    palette = sns.color_palette("Spectral", n_colors=len(labels))
-    sns.scatterplot(
-        x=data2.instance, y=data2.k, hue=data2.result, hue_order=labels, palette=palette
-    )
-    plt.xticks(rotation=90)
-    plt.legend(title=solver, facecolor="white", loc=2)
-    plt.title("Number of solved instances by " + solver)
-    plt.show()
+# Global plot style
+sns.set_style("whitegrid")
+sns.set_context("paper")
+sns.set_palette("deep")
 
 
 def merge2_dataframes(data, solvers):
@@ -37,38 +29,26 @@ def merge2_dataframes(data, solvers):
     return data2
 
 
-def safe_greater(x, y, rtol):
-    if np.isclose(x, y, rtol, atol=0.0):
-        return False
-    return x > y
-
-
-def safe_lower(x, y, rtol):
-    if np.isclose(x, y, rtol, atol=0.0):
-        return False
-    return x < y
-
-
 # First criterior: most solved instances
 # Second criterion: lowest execution time
 # Third criterion: lowest upper bound
 # Fourth criterion: greatest lower bound
 def compare(t1, t2):
-    if safe_greater(t1[1], t2[1], rtol=0.0):
+    if t1[1] > t2[1]:
         return -1
-    elif safe_lower(t1[1], t2[1], rtol=0.0):
+    elif t1[1] < t2[1]:
         return 1
-    if safe_lower(t1[2], t2[2], rtol=1e-2):
+    if t1[2] < t2[2]:
         return -1
-    elif safe_greater(t1[2], t2[2], rtol=1e-2):
+    elif t1[2] > t2[2]:
         return 1
-    if safe_lower(t1[3], t2[3], rtol=1e-5):
+    if t1[3] < t2[3]:
         return -1
-    elif safe_greater(t1[3], t2[3], rtol=1e-5):
+    elif t1[3] > t2[3]:
         return 1
-    if safe_greater(t1[4], t2[4], rtol=1e-5):
+    if t1[4] > t2[4]:
         return -1
-    elif safe_lower(t1[4], t2[4], rtol=1e-5):
+    elif t1[4] < t2[4]:
         return 1
     return 0
 
@@ -86,49 +66,236 @@ def get_tuple(serie, solver):
 def get_winner(serie, solvers):
     ls = [get_tuple(serie, solver) for solver in solvers]
     ls = sorted(ls, key=functools.cmp_to_key(compare))
+    if compare(ls[0], ls[1]) == 0:
+        return "tie"
     return ls[0][0]
 
 
-def get_winner_or_tie(serie, solvers):
-    if compare(get_tuple(serie, solvers[0]), get_tuple(serie, solvers[1])) == 0:
-        return "Tie"
-    else:
-        return get_winner(serie, solvers)
+def get_result_winner(serie):
+    winner = serie.winner
+    if winner == "tie":
+        return 0
+    result = serie["result_" + winner]
+    return result
 
 
-def show_best_solver(data, solvers, ties=False):
+def show_best_solver(data, solvers, success=False):
 
     # Get winner solver
     data = merge2_dataframes(data, solvers)
-    if ties and len(solvers) == 2:
-        data["winner"] = data.apply(get_winner_or_tie, solvers=solvers, axis=1)
-    else:
-        data["winner"] = data.apply(get_winner, solvers=solvers, axis=1)
+    data["winner"] = data.apply(get_winner, solvers=solvers, axis=1)
+    data["result_winner"] = data.apply(get_result_winner, axis=1)
     data2 = data.groupby("winner", as_index=False).agg(number=("instance", "count"))
-    data2.sort_values(by="winner")
+    data2 = data2.sort_values(by="number")
 
-    # Pie chart
-    plt.pie(data2.number, labels=data2.winner, autopct="%1.1f%%")
-    plt.title("Percentage of instances won by solver")
-    plt.show()
+    name = ""
+    for solver in solvers:
+        name += "_" + solver
 
     # Scatterplot
-    plt.figure(figsize=(6, 6))
-    ax = plt.gca()
-    ax.set_aspect(0.9)
-    ax.set_axisbelow(True)
-    sns.scatterplot(
-        x=data.instance,
-        y=data.k,
-        hue=data.winner,
-        hue_order=np.sort(data.winner.unique()),
-        style=data.winner,
+    fig, ax = plt.subplots(
+        1, 2, figsize=(6.25, 5), gridspec_kw={"width_ratios": [20, 1]}
     )
-    plt.grid(alpha=0.5, zorder=-1, axis="y")
-    plt.title("Winning solver by network and number of channels")
-    plt.xticks(rotation=90)
-    plt.legend()
+    if not success:
+        sns.scatterplot(
+            x=data.instance,
+            y=data.k,
+            hue=data.winner,
+            hue_order=np.sort(data.winner.unique()),
+            style=data.winner,
+            s=70,
+            ax=ax[0],
+        )
+        ax[0].legend()
+    else:
+        sns.scatterplot(
+            x=data.instance,
+            y=data.k,
+            hue=data.winner,
+            hue_order=np.sort(data.winner.unique()),
+            style=data.winner,
+            size=data.result_winner,
+            sizes=(40, 100),
+            s=80,
+            ax=ax[0],
+        )
+
+        solvers = np.sort(data.winner.unique())
+        handles, labels = ax[0].get_legend_handles_labels()
+        model_labels = [model for model in solvers]
+        model_handles = handles[1 : len(solvers) + 1]
+        opt_labels = [f"{i*20}%" for i in sorted(data.result_winner.unique())]
+        opt_handles = handles[len(solvers) + 2 :]
+
+        # Create and position separate legends
+        legend_opt = ax[0].legend(
+            opt_handles, opt_labels, title="Optimality", loc="upper left"
+        )
+        legend_model = ax[0].legend(
+            model_handles,
+            model_labels,
+            title="Model",
+            loc="upper left",
+            bbox_to_anchor=(0.2, 1),
+        )
+
+        # Add the species legend back as creating the second legend replaces the first
+        ax[0].add_artist(legend_opt)
+
+    # Put the legend out of the figure
+    ax[0].grid(alpha=0.5, zorder=-1, axis="y")
+    ax[0].tick_params("x", rotation=90)
+
+    # Barplot
+    data["x"] = ""
+    sns.histplot(
+        data=data,
+        x="x",
+        hue="winner",
+        hue_order=np.sort(data.winner.unique()),
+        multiple="fill",
+        stat="proportion",
+        discrete=True,
+        legend=False,
+        ax=ax[1],
+    )
+    ax[1].set_xlabel("")
+    ax[1].set_ylabel("")
+    ax[1].set_yticks([])
+    for container in ax[1].containers:
+        # Create custom labels: show value if above threshold, else empty string
+        custom_labels = [f"{v:.1%}" if v >= 0.01 else "" for v in container.datavalues]
+        ax[1].bar_label(container, labels=custom_labels, label_type="center")
+
+    plt.savefig("figs/scatter-best" + name + ".pdf", format="pdf", bbox_inches="tight")
     plt.show()
+    plt.show()
+
+
+def show_execution_time(data, solvers, grid: bool = False, log_scale: bool = False):
+    data = data[data.solver.isin(solvers)]
+    if not grid:
+        plt.figure(figsize=(6, 5))
+        sns.lineplot(
+            data=data,
+            x="instance",
+            y="t_solver",
+            hue="solver",
+            style="solver",
+            markers=True,
+            errorbar=None,
+            linewidth=2,
+            markersize=5,
+        )
+        if log_scale:
+            plt.yscale("log")
+        plt.ylim(top=1000)
+        plt.ylabel("time (s)")
+        plt.xticks(rotation=90)
+        plt.legend(title="Model")
+        name = ""
+        for solver in solvers:
+            name += "_" + solver
+        plt.savefig("figs/time" + name + ".pdf", format="pdf", bbox_inches="tight")
+        plt.show()
+
+
+def show_execution_time_grid(
+    data, solvers, n, cols, legend_xpos=0.5, log_scale: bool = False, sharey=True
+):
+    instances = data.instance.unique()
+    alt_seq = range(len(instances) - 1, -1, -max(1, int(len(instances) / n)))
+    finstances = [instances[i] for i in alt_seq]
+    finstances = finstances[:n]
+    finstances.reverse()
+
+    data = data[(data.solver.isin(solvers)) & (data.instance.isin(finstances))]
+    g = sns.FacetGrid(data, col="instance", col_wrap=cols, sharex=False, sharey=sharey)
+    g.map_dataframe(
+        sns.lineplot,
+        "k",
+        "t_solver",
+        errorbar=None,
+        hue="solver",
+        style="solver",
+        markers=True,
+        linewidth=1.5,
+        markersize=4,
+    )
+    if log_scale:
+        g.set(yscale="log")
+    # for ax in g.axes.flat:
+    #    ax.legend()
+    g.add_legend(
+        title="Model",
+        ncol=len(solvers),
+        loc="upper center",
+        bbox_to_anchor=(legend_xpos, 1.05),
+    )
+    g.set_axis_labels("k", "time (s)")
+    name = ""
+    for solver in solvers:
+        name += "_" + solver
+    plt.savefig("figs/time_grid" + name + ".pdf", format="pdf", bbox_inches="tight")
+
+
+#################################################################################
+
+
+def show_solved_instances(data, solver):
+    data2 = data[data.solver == solver]
+    # labels = range(0, 6, 1)
+    # palette = sns.color_palette("Spectral", n_colors=len(labels))
+    plt.figure(figsize=(6, 5))
+    sns.scatterplot(
+        x=data2.instance,
+        y=data2.k,
+        hue=data2.result,
+        palette="Greens_d",
+        size=data2.result,
+        sizes=(70, 100),
+        style=data2.result,
+    )
+    plt.xticks(rotation=90)
+    plt.legend(title="", facecolor="white", ncol=3)
+    plt.title(solver)
+    plt.savefig("figs/n_solved_" + solver + ".pdf", format="pdf", bbox_inches="tight")
+    plt.show()
+
+
+def show_execution_time_grid_alt(data, solvers, log_scale: bool = False):
+    data = data[data.solver.isin(solvers)]
+    g = sns.FacetGrid(
+        data=data,
+        col="k_class",
+        hue="solver",
+        hue_kws={
+            "markers": ["o", "x", "s", "+"],
+            "linestyles": ["-", "--", "-.", ":"],
+        },
+        margin_titles=True,
+    )
+    g.map(
+        sns.pointplot,
+        "instance",
+        "t_solver",
+        markers="^",
+        linewidth=1,
+        order=data.instance.unique(),
+        errorbar=None,
+        # errorbar=("pi", 50),
+        # dodge=True,
+    )
+    g.set_xticklabels(rotation=90)
+    g.set_axis_labels("instance", "time (s)")
+    if log_scale:
+        g.set(yscale="log")
+    g.set_titles(col_template="k/k* {col_name}")
+    g.add_legend()
+    name = ""
+    for solver in solvers:
+        name += "_" + solver
+    g.savefig("figs/time_grid_alt" + name + ".pdf", format="pdf", bbox_inches="tight")
 
 
 def show_cumulative_time(data, solvers, log_scale: bool = True, interval=None):
@@ -143,116 +310,37 @@ def show_cumulative_time(data, solvers, log_scale: bool = True, interval=None):
         log_scale=log_scale,
     )
     ax.set(
-        title="Cummulative percentage of solved runs over execution time by solver",
         xlabel="Time (seconds)",
         ylabel="Runs achieving optimality (%)",
     )
     ax.legend_.set_title(None)
     plt.show()
 
-    # sns.boxplot(
-    #     data=data1[data1.solver.isin(solvers)],
-    #     x="t_solver",
-    #     y="solver",
-    #     hue=data1[data1.solver.isin(solvers)].solver,
-    #     showfliers=False,
-    #     legend=False,
-    # ).set(
-    #     title="Boxplot of execution time by solver", xlabel="Time (seconds)", ylabel=""
-    # )
-    # plt.show()
 
-
-def show_execution_time(data, solvers, grid: bool = False, log_scale: bool = False):
+def show_execution_time2(data, solvers, log_scale: bool = False):
     data = data[data.solver.isin(solvers)]
-    if not grid:
-        # sns.set_theme(rc={"figure.figsize": (10, 5)})
-        sns.pointplot(
-            data=data,
-            x="instance",
-            y="t_solver",
-            hue="solver",
-            markers=["o", "x", "s", "+", "o", "x", "s", "+", "o", "x"],
-            linestyles=["-", "--", "-.", ":", "-", "--", "-.", ":", "-", "--"],
-            errorbar=None,
-            linewidth=1.5,
-        )
-        plt.title("Average execution time")
-        if log_scale:
-            plt.yscale("log")
-        plt.ylabel("time (s)")
-        plt.xticks(rotation=90)
-        plt.legend()
-        plt.show()
-
-        # sns.set_theme(rc={"figure.figsize": (10, 5)})
-        # sns.pointplot(
-        #     data=data,
-        #     x="instance",
-        #     y="t_solver",
-        #     hue="solver",
-        #     markers=["o", "x", "s", "+"],
-        #     linestyle="none",
-        #     linewidth=1.5,
-        #     errorbar=("pi", 50),
-        #     dodge=True,
-        # )
-        # plt.style.use("default")
-        # plt.title("Interquartile range of execution time")
-        # if log_scale:
-        #     plt.yscale("log")
-        # plt.ylabel("time (s)")
-        # plt.xticks(rotation=90)
-        # plt.show()
-
-        # sns.set_theme(rc={"figure.figsize": (10, 5)})
-        # sns.pointplot(
-        #     data=data,
-        #     x="instance",
-        #     y="t_solver",
-        #     hue="solver",
-        #     markers=["o", "x", "s", "+"],
-        #     linestyles=["-", "--", "-.", ":"],
-        #     linewidth=1.25,
-        #     errorbar=("pi", 50),
-        #     dodge=True,
-        # )
-        # plt.style.use("default")
-        # plt.title("Execution time")
-        # if log_scale:
-        #     plt.yscale("log")
-        # plt.ylabel("time (s)")
-        # plt.xticks(rotation=90)
-        # plt.show()
-    else:
-        g = sns.FacetGrid(
-            data=data,
-            col="k_class",
-            hue="solver",
-            hue_kws={
-                "markers": ["o", "x", "s", "+"],
-                "linestyles": ["-", "--", "-.", ":"],
-            },
-            margin_titles=True,
-        )
-        g.map(
-            sns.pointplot,
-            "instance",
-            "t_solver",
-            markers="^",
-            linewidth=1,
-            order=data.instance.unique(),
-            errorbar=None,
-            # errorbar=("pi", 50),
-            # dodge=True,
-        )
-        g.set_xticklabels(rotation=90)
-        g.fig.suptitle("Execution time", y=1.02)
-        g.set_axis_labels("instance", "time (s)")
-        if log_scale:
-            g.set(yscale="log")
-        g.set_titles(col_template="k/k* {col_name}")
-        g.add_legend()
+    plt.figure(figsize=(6, 5))
+    sns.pointplot(
+        data=data,
+        x="k",
+        y="t_solver",
+        hue="solver",
+        markers=["o", "x", "s", "+", "o", "x", "s", "+", "o", "x"],
+        linestyles=["-", "--", "-.", ":", "-", "--", "-.", ":", "-", "--"],
+        errorbar=None,
+        linewidth=1.5,
+        markersize=5,
+    )
+    if log_scale:
+        plt.yscale("log")
+    plt.ylabel("time (s)")
+    plt.xticks(rotation=90)
+    plt.legend()
+    name = ""
+    for solver in solvers:
+        name += "_" + solver
+    plt.savefig("figs/time-by-k" + name + ".pdf", format="pdf", bbox_inches="tight")
+    plt.show()
 
 
 def show_gap_1(data, solvers, grid: bool = False):
