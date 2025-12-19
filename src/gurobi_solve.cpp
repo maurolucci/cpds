@@ -92,7 +92,7 @@ SolveResult solveMIP(Pds &input, MIPModel &mipmodel,
   return result;
 }
 
-MIPModel brimkovModel(Pds &input) {
+MIPModel brimkovModel(Pds &input, bool inProp, bool outProp) {
   MIPModel mipmodel;
   auto &model = *mipmodel.model;
 
@@ -168,12 +168,38 @@ MIPModel brimkovModel(Pds &input) {
         constr3 += w.at(std::make_pair(v, u));
       model.addConstr(constr3 == n_channels * s.at(v));
     }
+
+    // Limitation of outgoing propagations
+    // (4.1) sum_{u \in N(v)} y_{vu} <= 1 - s_v, \forall v \in V_Z \cap V_1
+    // (4.1) sum_{u \in N(v)} y_{vu} <= 1, \forall v \in V_Z \cap V_2
+    if (outProp && input.isZeroInjection(v)) {
+      GRBLinExpr constr4 = 0;
+      for (auto u : boost::make_iterator_range(adjacent_vertices(v, graph)))
+        constr4 += y.at(std::make_pair(v, u));
+      if (degree(v, graph) <= n_channels)
+        constr4 += s.at(v);
+      model.addConstr(constr4 <= 1);
+    }
+
+    // Limitation of incomming propagations
+    // (5.1) sum_{u \in N(v) \cap V_Z} y_{uv} <= 1, \forall v \in V
+    if (inProp) {
+      GRBLinExpr constr5 = 0;
+      size_t nlhs = 0;
+      for (auto u : boost::make_iterator_range(adjacent_vertices(v, graph)))
+        if (input.isZeroInjection(u)) {
+          constr5 += y.at(std::make_pair(u, v));
+          nlhs++;
+        }
+      if (nlhs > 0)
+        model.addConstr(constr5 <= 1);
+    }
   }
 
   return mipmodel;
 }
 
-MIPModel jovanovicModel(Pds &input) {
+MIPModel jovanovicModel(Pds &input, bool inProp, bool outProp) {
   MIPModel mipmodel;
   auto &model = *mipmodel.model;
 
@@ -248,20 +274,24 @@ MIPModel jovanovicModel(Pds &input) {
     }
     model.addConstr(constr4 <= 0);
 
-    // (5) sum_{u \in N(v)} y_v_u <= 1, \forall v \in V_Z
-    if (input.isZeroInjection(v)) {
-      GRBLinExpr constr5 = 0;
-      for (auto u : boost::make_iterator_range(adjacent_vertices(v, graph)))
-        constr5 += y.at(std::make_pair(v, u));
-      model.addConstr(constr5 <= 1);
+    if (outProp) {
+      // (5) sum_{u \in N(v)} y_v_u <= 1, \forall v \in V_Z
+      if (input.isZeroInjection(v)) {
+        GRBLinExpr constr5 = 0;
+        for (auto u : boost::make_iterator_range(adjacent_vertices(v, graph)))
+          constr5 += y.at(std::make_pair(v, u));
+        model.addConstr(constr5 <= 1);
+      }
     }
 
-    // (6) sum_{u \in N(v) \cap V_Z} y_u_v <= 1, \forall v \in V
-    GRBLinExpr constr6 = 0;
-    for (auto u : boost::make_iterator_range(adjacent_vertices(v, graph)))
-      if (input.isZeroInjection(u))
-        constr6 += y.at(std::make_pair(u, v));
-    model.addConstr(constr6 <= 1);
+    if (inProp) {
+      // (6) sum_{u \in N(v) \cap V_Z} y_u_v <= 1, \forall v \in V
+      GRBLinExpr constr6 = 0;
+      for (auto u : boost::make_iterator_range(adjacent_vertices(v, graph)))
+        if (input.isZeroInjection(u))
+          constr6 += y.at(std::make_pair(u, v));
+      model.addConstr(constr6 <= 1);
+    }
 
     // (7) y_u_v + y_v_u <= 1, \forall (u,v),(v,u) in A_Z
     if (input.isZeroInjection(v))

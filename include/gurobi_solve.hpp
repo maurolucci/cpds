@@ -8,12 +8,13 @@
 
 namespace pds {
 
-MIPModel brimkovModel(Pds &input);
+MIPModel brimkovModel(Pds &input, bool inProp, bool outProp);
 
-MIPModel jovanovicModel(Pds &inputs);
+MIPModel jovanovicModel(Pds &inputs, bool inProp = true, bool outProp = true);
 
 SolveResult solveMIP(const Pds &input, MIPModel &model,
-                     boost::optional<std::string> output, double timeLimit);
+                     boost::optional<std::string> output, std::ostream &solFile,
+                     double timeLimit);
 
 } // namespace pds
 

@@ -70,13 +70,13 @@ auto getModel(const std::string &name) {
   }
 }
 
-auto getSolver(po::variables_map &vm) {
+auto getSolver(po::variables_map &vm, bool inProp, bool outProp) {
   std::string solverName = vm["solver"].as<std::string>();
   try {
-    return Solver{[model = getModel(solverName)](
-                      auto &input, boost::optional<std::string> logPath,
-                      std::ostream &solFile, double timeout) {
-      auto mip = model(input);
+    return Solver{[model = getModel(solverName), inProp,
+                   outProp](auto &input, boost::optional<std::string> logPath,
+                            std::ostream &solFile, double timeout) {
+      auto mip = model(input, inProp, outProp);
       auto result = solveMIP(input, mip, logPath, solFile, timeout);
       return result;
     }};
@@ -263,7 +263,7 @@ int main(int argc, const char **argv) {
           result = solveLazyForts(input, logPath, output.cbFile, output.solFile,
                                   timeout, lazyMax);
         } else {
-          Solver solve = getSolver(vm);
+          Solver solve = getSolver(vm, inProp, outProp);
           result = solve(input, logPath, output.solFile, timeout);
         }
       } catch (GRBException ex) {
