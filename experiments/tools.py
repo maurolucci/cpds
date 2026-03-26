@@ -238,6 +238,27 @@ def show_execution_time_grid(
         name += "_" + solver
     plt.savefig("figs/time_grid" + name + ".pdf", format="pdf", bbox_inches="tight")
 
+def show_cumulative_gap(data, solvers,  log_scale: bool = False, xlim: tuple[float, float] = (10e-4, 1), ylim: tuple[float, float] = (0, 1)):
+    data = data[data.solver.isin(solvers)]
+    plt.figure(figsize=(6, 5))
+    ax = sns.ecdfplot(
+            data=data[data.solver.isin(solvers)],
+            x="gap",
+            hue=data[data.solver.isin(solvers)].solver,
+            log_scale=log_scale,
+        )
+    ax.set(
+        xlabel="Relative gap g",
+        ylabel="Runs achieving gap ≤ g (%)",
+        xlim = xlim,
+        ylim = ylim,
+    )
+    sns.move_legend(ax, "lower right", title="Model")
+    name = ""
+    for solver in solvers:
+        name += "_" + solver
+    plt.savefig("figs/cumulative_gap" + name + ".pdf", format="pdf", bbox_inches="tight")
+    plt.show()
 
 #################################################################################
 
