@@ -248,9 +248,9 @@ def show_cumulative_gap(data, solvers, colors, log_scale: bool = False, xlim: tu
     data = data[data.solver.isin(solvers)]
     plt.figure(figsize=(6, 5))
     ax = sns.ecdfplot(
-            data=data[data.solver.isin(solvers)],
+            data=data,
             x="gap",
-            hue=data[data.solver.isin(solvers)].solver,
+            hue="solver",
             palette=colors,
             log_scale=log_scale,
         )
@@ -268,15 +268,17 @@ def show_cumulative_gap(data, solvers, colors, log_scale: bool = False, xlim: tu
     plt.show()
 
 def show_cumulative_time(data, solvers, colors, log_scale: bool = True):
+    data = data[data.solver.isin(solvers)]
+    plt.figure(figsize=(6, 5))
     ax = sns.ecdfplot(
-        data=data[data.solver.isin(solvers)],
+        data=data,
         x="t_solver",
-        hue=data[data.solver.isin(solvers)].solver,
+        hue="solver",
         palette=colors,
         log_scale=log_scale,
     )
     ax.set(
-        xlabel="Time t (seconds)",
+        xlabel="Time t (s)",
         ylabel="Runs achieving time ≤ t (%)",
     )
     sns.move_legend(ax, "lower right", title="Model")
