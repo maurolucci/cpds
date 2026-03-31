@@ -1,3 +1,5 @@
+'''Module that collect the stats and write a csv'''
+
 import pandas as pd
 import os
 import sys
