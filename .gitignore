@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-pds-lim
+cpds
 
 # Directories
 /_deps/

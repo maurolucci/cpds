@@ -12,9 +12,9 @@ INCS = -I$(INCPATH) -I$(DEPPATH)/fmt/include -I$(DEPPATH)/tinyxml2 -I/opt/gurobi
 
 FLAGS = -Wall -Wextra -O3
 
-all: deps pds-lim
+all: deps cpds
 
-pds-lim: main.cpp pds.o graphio.o gurobi_solve.o efps_solve.o fps_solve.o fort_solve.o $(DEPS)
+cpds: main.cpp pds.o graphio.o gurobi_solve.o efps_solve.o fps_solve.o fort_solve.o $(DEPS)
 	$(CC) -o $@ $^ $(INCS) $(LIBS) $(FLAGS)
 
 deps:

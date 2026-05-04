@@ -6,7 +6,7 @@ NRUN=5
 MAXNODES=15000
 declare -a SOLVERS=("efpss")
 CASES="instances.csv"
-BIN="../pds-lim"
+BIN="../cpds"
 INPUT="../inputs/"
 OUTPUT="../outputs/exp2/"
 

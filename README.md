@@ -1,7 +1,12 @@
 # CPDS
 
-Branch-and-cut implementation for PMU placement style models over power-network
-graphs with channel limitations, based on forbidden propagation sets.
+Repository containing implementations, computational results, and benchmark
+instances for ILP formulations based on forbidden propagation sets for the
+Capacitated Power Dominating Set Problem.
+
+This codebase accompanies the paper "Capacitated Power Dominating Set Problem:
+A Solution Approach Based on Forbidden Propagation Sets" by Mauro Lucci,
+Mariana Escalante, and Diego Delle Donne.
 
 ## Requirements
 
@@ -34,7 +39,7 @@ The deps target is executed automatically and builds:
 
 The resulting executable is:
 
-- pds-lim
+- cpds
 
 ## Input Format
 
@@ -43,7 +48,7 @@ Inputs are GraphML files passed through -f/--graph.
 Example:
 
 ```bash
-./pds-lim -s brimkov -w 5 -f inputs/case_ieee30.graphml
+./cpds -s brimkov -w 5 -f inputs/case_ieee30.graphml
 ```
 
 ## Usage
@@ -51,7 +56,7 @@ Example:
 General syntax:
 
 ```bash
-./pds-lim -s SOLVER -w N_CHANNELS -f FILE1 [FILE2 ...] [options]
+./cpds -s SOLVER -w N_CHANNELS -f FILE1 [FILE2 ...] [options]
 ```
 
 Main solver options:
@@ -83,7 +88,7 @@ Constraint/callback toggles:
 For the full list:
 
 ```bash
-./pds-lim --help
+./cpds --help
 ```
 
 ## Output Behavior
