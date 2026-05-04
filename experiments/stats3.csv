@@ -1,4 +1,4 @@
-,solver,instance,vertices,edges,propagating_vertices,omega,variables,constraints,run,lower_bound,upper_bound,gap,result,nodes,t_solver,callbacks,t_callback,lazy_constraints
+,solver,instance,vertices,edges,propagating_vertices,capacity,variables,constraints,run,lower_bound,upper_bound,gap,result,nodes,t_solver,callbacks,t_callback,lazy_constraints
 0,forts,../inputs/case2736sp.graphml,2736,3265,645,2,5943,832,2,770.0,781,0.014084507042253521,Timeout,237456,900203742,1418,1737030,17787
 1,jovanovic,../inputs/case13659pegase.graphml,13659,18625,4024,1,71541,161265,4,7465.0,7465,0.0,Optimal,1997,361235792,0,0,0
 2,brimkov,../inputs/case6470rte.graphml,6470,8066,2352,7,22080,39430,0,1312.0,1312,0.0,Optimal,2464,22696081,0,0,0

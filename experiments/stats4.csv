@@ -1,4 +1,4 @@
-,solver,instance,vertices,edges,propagating_vertices,omega,variables,constraints,run,lower_bound,upper_bound,gap,result,nodes,t_solver,callbacks,t_callback,lazy_constraints
+,solver,instance,vertices,edges,propagating_vertices,capacity,variables,constraints,run,lower_bound,upper_bound,gap,result,nodes,t_solver,callbacks,t_callback,lazy_constraints
 0,brimkov-outp,../inputs/case6468rte.graphml,6468,8065,2384,5,23976,42159,3,1344.0,1344,0.0,Optimal,1626,59897674,0,0,0
 1,brimkov-outp,../inputs/case9241pegase.graphml,9241,14207,2902,5,34809,40450,3,2038.0,2038,0.0,Optimal,1691,63369349,0,0,0
 2,brimkov-outp,../inputs/case145.graphml,145,422,71,13,844,2645,4,18.0,18,0.0,Optimal,1,216464,0,0,0

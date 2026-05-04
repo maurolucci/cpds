@@ -48,7 +48,7 @@ Inputs are GraphML files passed through -f/--graph.
 Example:
 
 ```bash
-./cpds -s brimkov -w 5 -f inputs/case_ieee30.graphml
+./cpds -s brimkov -k 5 -f inputs/case_ieee30.graphml
 ```
 
 ## Usage
@@ -56,7 +56,7 @@ Example:
 General syntax:
 
 ```bash
-./cpds -s SOLVER -w N_CHANNELS -f FILE1 [FILE2 ...] [options]
+./cpds -s SOLVER -k CAPACITY -f FILE1 [FILE2 ...] [options]
 ```
 
 Main solver options:
@@ -71,7 +71,7 @@ Main solver options:
 
 - -h, --help: show help
 - -s, --solver: solver name
-- -w, --n-channels: number of channels
+- -k, --capacity: capacity
 - -f, --graph: input GraphML files (multi-token)
 - -z, --all-zi: treat all nodes as zero-injection
 - -n, --repeat: number of repetitions (default 1)

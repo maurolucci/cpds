@@ -5,7 +5,7 @@ import os
 import sys
 
 def get_stats(statsPath: str) -> pd.DataFrame:
-    columns = ["solver", "instance", "vertices", "edges", "propagating_vertices", "omega",
+    columns = ["solver", "instance", "vertices", "edges", "propagating_vertices", "capacity",
               "variables", "constraints", "run", "lower_bound", "upper_bound", "gap",
               "result", "nodes", "t_solver", "callbacks", "t_callback", "lazy_constraints"]
     data = []

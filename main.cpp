@@ -1,3 +1,15 @@
+#include <fmt/format.h>
+#include <gurobi_c++.h>
+
+#include <boost/optional.hpp>
+#include <boost/program_options.hpp>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <map>
+
 #include "efps_solve.hpp"
 #include "fort_solve.hpp"
 #include "fps_solve.hpp"
@@ -6,22 +18,11 @@
 #include "gurobi_solve.hpp"
 #include "pds.hpp"
 
-#include <boost/optional.hpp>
-#include <boost/program_options.hpp>
-#include <chrono>
-#include <filesystem>
-#include <fmt/format.h>
-#include <fstream>
-#include <gurobi_c++.h>
-#include <iostream>
-#include <limits>
-#include <map>
-
 namespace fs = std::filesystem;
 namespace po = boost::program_options;
 using namespace pds;
-using Solver = std::function<SolveResult(Pds &, boost::optional<std::string>,
-                                         std::ostream &, double)>;
+using Solver = std::function<SolveResult(Pds&, boost::optional<std::string>,
+                                         std::ostream&, double)>;
 
 std::map<std::string, fs::path> outDirs = {{"log", fs::path()},
                                            {"stat", fs::path()},
@@ -29,38 +30,39 @@ std::map<std::string, fs::path> outDirs = {{"log", fs::path()},
                                            {"cb", fs::path()}};
 
 class outPut {
-public:
+ public:
   std::ofstream cbFileAux, solFileAux;
   std::ostream &cbFile, &solFile;
-  outPut(std::ostream &cbStream = std::cout,
-         std::ostream &solStream = std::cout)
+  outPut(std::ostream& cbStream = std::cout,
+         std::ostream& solStream = std::cout)
       : cbFileAux(), solFileAux(), cbFile(cbStream), solFile(solStream) {}
   outPut(std::string sbPath, std::string solPath)
       : cbFileAux(sbPath, std::ofstream::app),
-        solFileAux(solPath, std::ofstream::app), cbFile(this->cbFileAux),
+        solFileAux(solPath, std::ofstream::app),
+        cbFile(this->cbFileAux),
         solFile(this->solFileAux) {}
 };
 
 std::string format_solve_state(SolveState state) {
   std::string name = "unknown";
   switch (state) {
-  case pds::SolveState::Optimal:
-    name = "Optimal";
-    break;
-  case pds::SolveState::Other:
-    name = "Other";
-    break;
-  case pds::SolveState::Infeasible:
-    name = "Infeasible";
-    break;
-  case pds::SolveState::Timeout:
-    name = "Timeout";
-    break;
+    case pds::SolveState::Optimal:
+      name = "Optimal";
+      break;
+    case pds::SolveState::Other:
+      name = "Other";
+      break;
+    case pds::SolveState::Infeasible:
+      name = "Infeasible";
+      break;
+    case pds::SolveState::Timeout:
+      name = "Timeout";
+      break;
   }
   return name;
 }
 
-auto getModel(const std::string &name) {
+auto getModel(const std::string& name) {
   if (name == "brimkov") {
     return brimkovModel;
   } else if (name == "jovanovic") {
@@ -70,32 +72,30 @@ auto getModel(const std::string &name) {
   }
 }
 
-auto getSolver(po::variables_map &vm, bool inProp, bool outProp) {
+auto getSolver(po::variables_map& vm, bool inProp, bool outProp) {
   std::string solverName = vm["solver"].as<std::string>();
   try {
-    return Solver{[model = getModel(solverName), inProp,
-                   outProp](auto &input, boost::optional<std::string> logPath,
-                            std::ostream &solFile, double timeout) {
+    return Solver{[model = getModel(solverName), inProp, outProp](
+                      auto& input, boost::optional<std::string> logPath,
+                      std::ostream& solFile, double timeout) {
       auto mip = model(input, inProp, outProp);
       auto result = solveMIP(input, mip, logPath, solFile, timeout);
       return result;
     }};
-  } catch (std::invalid_argument &ex) {
+  } catch (std::invalid_argument& ex) {
     fmt::print(stderr, "{}", ex.what());
     throw ex;
   }
 }
 
-int main(int argc, const char **argv) {
-
+int main(int argc, const char** argv) {
   // Parse arguments
   po::options_description desc(argv[0]);
   desc.add_options()("help,h", "show this help");
   desc.add_options()("solver,s", po::value<std::string>()->required(),
                      "solver, can be any of "
                      "[brimkov,jovanovic,fpss,efpss,forts]");
-  desc.add_options()("n-channels,w", po::value<size_t>()->required(),
-                     "number of channels");
+  desc.add_options()("capacity,k", po::value<size_t>()->required(), "capacity");
   desc.add_options()(
       "graph,f",
       po::value<std::vector<std::string>>()->required()->multitoken(),
@@ -133,7 +133,7 @@ int main(int argc, const char **argv) {
         po::command_line_parser(argc, argv).options(desc).positional(pos).run(),
         vm);
     po::notify(vm);
-  } catch (po::error const &e) {
+  } catch (po::error const& e) {
     std::cerr << e.what() << std::endl;
     desc.print(std::cout);
     return 2;
@@ -148,7 +148,7 @@ int main(int argc, const char **argv) {
   bool allZeroInjection = vm.count("all-zi");
   size_t repetitions = vm["repeat"].as<size_t>();
   double timeout = vm["timeout"].as<double>();
-  size_t n_channels = vm["n-channels"].as<size_t>();
+  size_t capacity = vm["capacity"].as<size_t>();
   bool inProp = vm.count("in-prop");
   bool outProp = vm.count("out-prop");
   bool initEFPS = vm.count("init-efps");
@@ -182,35 +182,26 @@ int main(int argc, const char **argv) {
   }
 
   // Update solver name, if necessary
-  if (inProp)
-    solver.append("-inp");
-  if (outProp)
-    solver.append("-outp");
-  if (initEFPS)
-    solver.append("-init");
-  if (initFPS1)
-    solver.append("-init1");
-  if (initFPS2)
-    solver.append("-init2");
-  if (initFPS3)
-    solver.append("-init3");
+  if (inProp) solver.append("-inp");
+  if (outProp) solver.append("-outp");
+  if (initEFPS) solver.append("-init");
+  if (initFPS1) solver.append("-init1");
+  if (initFPS2) solver.append("-init2");
+  if (initFPS3) solver.append("-init3");
   if (useCuts) {
     solver.append("-cuts");
     if (cutMax < std::numeric_limits<size_t>::max())
       solver.append(fmt::format("{}m", cutMax));
-    if (cutFreq)
-      solver.append(fmt::format("{}f", cutFreq));
+    if (cutFreq) solver.append(fmt::format("{}f", cutFreq));
   }
 
   // Read inputs
-  for (const std::string &filename : inputs) {
-
-    Pds input(readGraphML(filename, allZeroInjection), n_channels);
+  for (const std::string& filename : inputs) {
+    Pds input(readGraphML(filename, allZeroInjection), capacity);
 
     for (size_t run = 0; run < repetitions; ++run) {
-
       fs::path currentName(fs::path(filename).stem().string() +
-                           fmt::format("-{}-{}-{}", solver, n_channels, run));
+                           fmt::format("-{}-{}-{}", solver, capacity, run));
       std::cout << "Solving Instance " << currentName << " ..." << std::endl;
 
       if (vm.count("outdir")) {
@@ -231,7 +222,7 @@ int main(int argc, const char **argv) {
         }
       }
 
-      auto &graph = static_cast<const Pds &>(input).get_graph();
+      auto& graph = static_cast<const Pds&>(input).get_graph();
       size_t n = boost::num_vertices(graph);
       size_t m = boost::num_edges(graph);
       size_t zi = input.numZeroInjection();
@@ -277,12 +268,12 @@ int main(int argc, const char **argv) {
       // Write stats
       using namespace fmt::literals;
       std::string stats(fmt::format(
-          "{solver},{name},{n},{m},{zi},{channels},{variables},{"
+          "{solver},{name},{n},{m},{zi},{capacity},{variables},{"
           "constraints},{run},{lower_bound},{upper_bound},{gap},{result}"
           ",{nodes},{t_solver},{lazy_calls},{lazy_time},{lazy_added},{cut_"
           "calls},{cut_time},{cut_added}\n",
           "solver"_a = solver, "name"_a = filename, "n"_a = n, "m"_a = m,
-          "zi"_a = zi, "channels"_a = n_channels,
+          "zi"_a = zi, "capacity"_a = capacity,
           "variables"_a = result.variables,
           "constraints"_a = result.constraints, "run"_a = run,
           "lower_bound"_a = result.lower, "upper_bound"_a = result.upper,
